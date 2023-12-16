@@ -56,25 +56,26 @@ class yank_content(Command):
             self.fm.notify('Could not find a clipboard manager in the PATH.', bad=True)
             return
 
-        arg = self.rest(1)
-        if arg:
+        if arg := self.rest(1):
             if not os.path.isfile(arg):
-                self.fm.notify("'{}' is not a file.".format(arg), bad=True)
+                self.fm.notify(f"'{arg}' is not a file.", bad=True)
                 return
             file = File(arg)
         else:
             file = self.fm.thisfile
             if not file.is_file:
-                self.fm.notify("'{}' is not a file.".format(file.relative_path), bad=True)
+                self.fm.notify(f"'{file.relative_path}' is not a file.", bad=True)
                 return
 
         if not file.is_binary():
             for command in clipboard_commands:
                 with open(file.path, mode='r') as fd:
                     self.fm.execute_command(command, universal_newlines=True, stdin=fd)
-            self.fm.notify("The content of '{}' is copied to the clipboard.".format(file.relative_path))
+            self.fm.notify(
+                f"The content of '{file.relative_path}' is copied to the clipboard."
+            )
         else:
-            self.fm.notify("'{}' is not a text file.".format(file.relative_path))
+            self.fm.notify(f"'{file.relative_path}' is not a text file.")
 
 
 class fzf_select(Command):
@@ -104,16 +105,12 @@ class fzf_select(Command):
             hidden = ('--hidden' if self.fm.settings.show_hidden else '')
             exclude = "--no-ignore-vcs --exclude '.git' --exclude '*.py[co]' --exclude '__pycache__'"
             only_directories = ('--type directory' if self.quantifier else '')
-            fzf_default_command = '{} --follow {} {} {} --color=always'.format(
-                fd, hidden, exclude, only_directories
-            )
+            fzf_default_command = f'{fd} --follow {hidden} {exclude} {only_directories} --color=always'
         else:
             hidden = ('-false' if self.fm.settings.show_hidden else r"-path '*/\.*' -prune")
             exclude = r"\( -name '\.git' -o -iname '\.*py[co]' -o -fstype 'dev' -o -fstype 'proc' \) -prune"
             only_directories = ('-type d' if self.quantifier else '')
-            fzf_default_command = 'find -L . -mindepth 1 {} -o {} -o {} -print | cut -b3-'.format(
-                hidden, exclude, only_directories
-            )
+            fzf_default_command = f'find -L . -mindepth 1 {hidden} -o {exclude} -o {only_directories} -print | cut -b3-'
 
         env = os.environ.copy()
         env['FZF_DEFAULT_COMMAND'] = fzf_default_command
@@ -177,9 +174,7 @@ class fd_search(Command):
 
         hidden = ('--hidden' if self.fm.settings.show_hidden else '')
         exclude = "--no-ignore-vcs --exclude '.git' --exclude '*.py[co]' --exclude '__pycache__'"
-        command = '{} --follow {} {} {} --print0 {}'.format(
-            fd, depth, hidden, exclude, target
-        )
+        command = f'{fd} --follow {depth} {hidden} {exclude} --print0 {target}'
         fd = self.fm.execute_command(command, universal_newlines=True, stdout=subprocess.PIPE)
         stdout, _ = fd.communicate()
 
@@ -191,8 +186,9 @@ class fd_search(Command):
             results = map(lambda res: os.path.abspath(os.path.join(self.fm.thisdir.path, res)), results)
             self.SEARCH_RESULTS.extend(sorted(results, key=str.lower))
             if len(self.SEARCH_RESULTS) > 0:
-                self.fm.notify('Found {} result{}.'.format(len(self.SEARCH_RESULTS),
-                                                           ('s' if len(self.SEARCH_RESULTS) > 1 else '')))
+                self.fm.notify(
+                    f"Found {len(self.SEARCH_RESULTS)} result{'s' if len(self.SEARCH_RESULTS) > 1 else ''}."
+                )
                 self.fm.select_file(self.SEARCH_RESULTS[0])
             else:
                 self.fm.notify('No results found.')
